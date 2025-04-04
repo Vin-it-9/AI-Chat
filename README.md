@@ -1,54 +1,128 @@
-# ai-chat
+# AI Chat Assistant
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A modern, locally-hosted AI chat application built with Quarkus, Ollama, and LangChain4j. This application provides a web-based interface for interacting with local Large Language Models through Ollama.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Features
 
-## Running the application in dev mode
+- 🤖 Real-time chat with AI using local language models
+- 🔒 Privacy-focused (all processing happens on your machine)
+- 💬 Modern, responsive UI with typing animations
+- 🔄 WebSocket support for instant communication
+- 🌐 RESTful API endpoints as fallback
+- 💾 Chat session management
+- 🎨 Sleek design with Tailwind CSS
 
-You can run your application in dev mode that enables live coding using:
+## Prerequisites
 
-```shell script
+- Java 21
+- Maven 3.8+
+- [Ollama](https://ollama.ai/) - Local LLM serving platform
+- An LLM model downloaded through Ollama (e.g., llama2)
+
+## Installation
+
+### 1. Install Ollama
+
+First, install Ollama by following the official instructions at [ollama.ai](https://ollama.ai/download).
+
+### 2. Pull a Language Model
+
+After installing Ollama, pull a language model (this example uses llama2):
+
+```bash
+ollama pull llama2
+```
+
+### 3. Run Ollama and Start the Model
+
+Ensure Ollama is running and start the model service:
+```bash
+ollama run llama2
+```
+You can keep this terminal open while running the application. The model will be available for API calls on port 11434.
+
+### 4. Run the Application
+
+```bash
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+This will start the application in development mode. The chat interface will be available at http://localhost:8080.
 
-## Packaging and running the application
+## Configuration
 
-The application can be packaged using:
+The application can be configured in `src/main/resources/application.properties`:
 
-```shell script
-./mvnw package
+```properties
+# Application configuration
+quarkus.application.name=AI Chat Assistant
+quarkus.http.port=8080
+
+# Ollama configuration
+ollama.base.url=http://localhost:11434  # URL where Ollama is running
+ollama.model=llama2                     # Default model to use
+
+# Logging configuration
+quarkus.log.console.enable=true
+quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
+quarkus.log.level=INFO
+```
+ 
+### Starting a Chat Session
+
+1. Open your browser and navigate to http://localhost:8080
+2. The chat interface will automatically create a new session
+3. Type your message in the input field and press Enter or click the send button
+4. The AI will respond in real-time with a typing animation
+
+### Chat Commands
+
+You can use the "New Chat" button in the top-right corner to clear the current conversation and start a fresh chat session.
+
+## API Endpoints
+
+If you want to integrate with the chat assistant programmatically:
+
+### Create a new session
+```
+POST /api/chat
+```
+Returns: `{"sessionId":"uuid-string"}`
+
+### Send a message
+```
+POST /api/chat/{sessionId}/message
+```
+Request body:
+```json
+{
+  "content": "Your message here",
+  "sender": "user"
+}
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+### End a session
+```
+DELETE /api/chat/{sessionId}
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+## WebSocket API
 
-## Creating a native executable
+For real-time communication:
 
-You can create a native executable using:
+```javascript
+const socket = new WebSocket(`ws://localhost:8080/chat-socket/${sessionId}`);
 
-```shell script
-./mvnw package -Dnative
+// Send a message
+socket.send(JSON.stringify({
+  "content": "Your message here",
+  "sender": "user"
+}));
+
+// Listen for responses
+socket.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  console.log(message.content);
+};
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/ai-chat-1.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
